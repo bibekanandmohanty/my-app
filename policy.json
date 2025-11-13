@@ -1,0 +1,191 @@
+{
+  "bindings": [
+    {
+      "role": "roles/cloudbuild.builds.builder",
+      "members": [
+        "serviceAccount:terraform-runner@gitops-testing-478006.iam.gserviceaccount.com"
+      ]
+    },
+    {
+      "role": "roles/artifactregistry.writer",
+      "members": [
+        "serviceAccount:terraform-runner@gitops-testing-478006.iam.gserviceaccount.com"
+      ]
+    },
+    {
+      "role": "roles/run.admin",
+      "members": [
+        "serviceAccount:terraform-runner@gitops-testing-478006.iam.gserviceaccount.com"
+      ]
+    },
+    {
+      "role": "roles/iam.serviceAccountUser",
+      "members": [
+        "serviceAccount:terraform-runner@gitops-testing-478006.iam.gserviceaccount.com"
+      ]
+    },
+
+    {
+      "members": [
+        "serviceAccount:service-648047501600@gcp-sa-artifactregistry.iam.gserviceaccount.com"
+      ],
+      "role": "roles/artifactregistry.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:648047501600@cloudbuild.gserviceaccount.com"
+      ],
+      "role": "roles/artifactregistry.writer"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@gcp-sa-binaryauthorization.iam.gserviceaccount.com"
+      ],
+      "role": "roles/binaryauthorization.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:648047501600@cloudbuild.gserviceaccount.com"
+      ],
+      "role": "roles/cloudbuild.builds.builder"
+    },
+    {
+      "condition": {
+        "expression": "request.time < timestamp(\"2025-11-12T14:26:54.588Z\")",
+        "title": "cloudbuild-connection-setup"
+      },
+      "members": [
+        "serviceAccount:terraform-runner@gitops-testing-478006.iam.gserviceaccount.com"
+      ],
+      "role": "roles/cloudbuild.builds.builder"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+      ],
+      "role": "roles/cloudbuild.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@compute-system.iam.gserviceaccount.com"
+      ],
+      "role": "roles/compute.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@container-engine-robot.iam.gserviceaccount.com"
+      ],
+      "role": "roles/container.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@container-analysis.iam.gserviceaccount.com"
+      ],
+      "role": "roles/containeranalysis.ServiceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@containerregistry.iam.gserviceaccount.com"
+      ],
+      "role": "roles/containerregistry.ServiceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@gcp-sa-devconnect.iam.gserviceaccount.com"
+      ],
+      "role": "roles/developerconnect.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+      ],
+      "role": "roles/developerconnect.tokenAccessor"
+    },
+    {
+      "members": [
+        "serviceAccount:648047501600-compute@developer.gserviceaccount.com",
+        "serviceAccount:648047501600@cloudbuild.gserviceaccount.com",
+        "serviceAccount:648047501600@cloudservices.gserviceaccount.com",
+        "serviceAccount:terraform-runner@gitops-testing-478006.iam.gserviceaccount.com"
+      ],
+      "role": "roles/editor"
+    },
+    {
+      "members": [
+        "serviceAccount:648047501600@cloudbuild.gserviceaccount.com"
+      ],
+      "role": "roles/iam.serviceAccountUser"
+    },
+    {
+      "members": [
+        "user:bibek.silicon1@gmail.com"
+      ],
+      "role": "roles/owner"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@gcp-sa-pubsub.iam.gserviceaccount.com"
+      ],
+      "role": "roles/pubsub.serviceAgent"
+    },
+    {
+      "members": [
+        "serviceAccount:648047501600@cloudbuild.gserviceaccount.com"
+      ],
+      "role": "roles/run.admin"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@serverless-robot-prod.iam.gserviceaccount.com"
+      ],
+      "role": "roles/run.serviceAgent"
+    },
+    {
+      "condition": {
+        "expression": "request.time < timestamp(\"2025-11-12T14:26:54.588Z\")",
+        "title": "cloudbuild-connection-setup"
+      },
+      "members": [
+        "serviceAccount:service-648047501600@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+      ],
+      "role": "roles/secretmanager.admin"
+    },
+    {
+      "condition": {
+        "expression": "request.time < timestamp(\"2025-11-12T14:43:53.895Z\")",
+        "title": "developer-connect-connection-setup"
+      },
+      "members": [
+        "serviceAccount:service-648047501600@gcp-sa-devconnect.iam.gserviceaccount.com"
+      ],
+      "role": "roles/secretmanager.admin"
+    },
+    {
+      "members": [
+        "serviceAccount:648047501600@cloudbuild.gserviceaccount.com"
+      ],
+      "role": "roles/secretmanager.secretAccessor"
+    },
+    {
+      "members": [
+        "serviceAccount:648047501600@cloudbuild.gserviceaccount.com"
+      ],
+      "role": "roles/storage.admin"
+    },
+    {
+      "members": [
+        "serviceAccount:terraform-runner@gitops-testing-478006.iam.gserviceaccount.com"
+      ],
+      "role": "roles/viewer"
+    },
+    {
+      "members": [
+        "serviceAccount:service-648047501600@gcp-sa-vpcaccess.iam.gserviceaccount.com"
+      ],
+      "role": "roles/vpcaccess.serviceAgent"
+    }
+  ],
+  "etag": "BwZDdqOA5lE=",
+  "version": 3
+}
+

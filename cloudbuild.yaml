@@ -1,0 +1,54 @@
+steps:
+  # 🧱 Build Frontend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:${SHORT_SHA}', './frontend']
+
+  # 🧱 Build Backend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:${SHORT_SHA}', './backend']
+
+  # 🔍 Scan Images with Trivy (DevSecOps)
+  - name: 'aquasec/trivy:latest'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        trivy image --exit-code 0 --severity HIGH,CRITICAL us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:${SHORT_SHA}
+        trivy image --exit-code 0 --severity HIGH,CRITICAL us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:${SHORT_SHA}
+
+  # 📦 Push Images to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:${SHORT_SHA}']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:${SHORT_SHA}']
+
+  # 🧰 Terraform Infrastructure (Dev)
+  - name: 'hashicorp/terraform:1.6.6'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd terraform/envs/${_ENV}
+        terraform init -backend-config="bucket=tfstate-$PROJECT_ID" -backend-config="prefix=state/${_ENV}"
+        terraform apply -auto-approve -var-file="${_ENV}.tfvars"
+
+  # 🚀 Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy frontend-${_ENV} \
+          --image us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:${SHORT_SHA} \
+          --region us-central1 --allow-unauthenticated
+        gcloud run deploy backend-${_ENV} \
+          --image us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:${SHORT_SHA} \
+          --region us-central1 --no-allow-unauthenticated
+
+substitutions:
+  _ENV: dev
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:${SHORT_SHA}'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:${SHORT_SHA}'
+

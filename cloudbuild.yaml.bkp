@@ -1,0 +1,173 @@
+# cloudbuild.yaml
+# =====================================================================
+# GitOps-driven CI/CD pipeline for GCP Cloud Run + Terraform architecture
+# =====================================================================
+
+options:
+  machineType: "E2_HIGHCPU_8"
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _ENV: "dev"                   # Overridden by trigger (develop/test/main/feature/*)
+  _TERRAFORM_DIR: "terraform/envs/${_ENV}"
+  _REGION: "us-central1"
+  _PROJECT_ID: "gitops-testing-478006"
+  _SHORT_SHA: "$SHORT_SHA"
+  _BRANCH_NAME: "$BRANCH_NAME"
+
+# ---------------------------------------------------------------------
+# STEP 1: Static code analysis
+# ---------------------------------------------------------------------
+steps:
+
+# Frontend lint
+- id: "lint-frontend"
+  name: "gcr.io/cloud-builders/npm"
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      cd frontend
+      npm ci
+      npm run lint || exit 1
+
+# Backend lint & security
+- id: "lint-backend"
+  name: "python:3.11"
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      cd backend
+      pip install -r requirements.txt
+      pip install flake8 bandit pytest
+      flake8 .
+      bandit -r app || true
+      pytest -q || true
+
+# Terraform IaC scan (Checkov)
+- id: "checkov"
+  name: "bridgecrew/checkov:latest"
+  entrypoint: "sh"
+  args:
+    - "-c"
+    - |
+      cd $_TERRAFORM_DIR
+      checkov -d . || true
+
+# ---------------------------------------------------------------------
+# STEP 2: Build & push container images
+# ---------------------------------------------------------------------
+
+# Build frontend image
+- id: "build-frontend"
+  name: "gcr.io/cloud-builders/docker"
+  args:
+    - build
+    - "-t"
+    - "us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/frontend:${_SHORT_SHA}"
+    - "./frontend"
+
+# Build backend image
+- id: "build-backend"
+  name: "gcr.io/cloud-builders/docker"
+  args:
+    - build
+    - "-t"
+    - "us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/backend:${_SHORT_SHA}"
+    - "./backend"
+
+# Push images to Artifact Registry
+- id: "push-images"
+  name: "gcr.io/cloud-builders/docker"
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      docker push us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/frontend:${_SHORT_SHA}
+      docker push us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/backend:${_SHORT_SHA}
+
+# ---------------------------------------------------------------------
+# STEP 3: Container vulnerability scan (Trivy)
+# ---------------------------------------------------------------------
+- id: "trivy-scan"
+  name: "aquasec/trivy:latest"
+  entrypoint: "sh"
+  args:
+    - "-c"
+    - |
+      trivy image --exit-code 0 --severity HIGH,CRITICAL us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/frontend:${_SHORT_SHA}
+      trivy image --exit-code 0 --severity HIGH,CRITICAL us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/backend:${_SHORT_SHA}
+
+# ---------------------------------------------------------------------
+# STEP 4: Capture image digests
+# ---------------------------------------------------------------------
+- id: "capture-digests"
+  name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      FRONT_IMG="us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/frontend:${_SHORT_SHA}"
+      BACK_IMG="us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/backend:${_SHORT_SHA}"
+      FRONT_DIGEST=$(gcloud artifacts docker images describe $FRONT_IMG --format='get(image_summary.digest)')
+      BACK_DIGEST=$(gcloud artifacts docker images describe $BACK_IMG --format='get(image_summary.digest)')
+      echo "FRONT_IMAGE=$FRONT_IMG@$FRONT_DIGEST" >> /workspace/images.txt
+      echo "BACK_IMAGE=$BACK_IMG@$BACK_DIGEST" >> /workspace/images.txt
+
+# ---------------------------------------------------------------------
+# STEP 5: Deploy infrastructure via Terraform
+# ---------------------------------------------------------------------
+- id: "terraform-apply"
+  name: "hashicorp/terraform:light"
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      cd $_TERRAFORM_DIR
+      terraform init -input=false
+      source /workspace/images.txt
+      echo "Deploying environment $_ENV"
+      terraform apply -auto-approve -input=false \
+        -var "project_id=$_PROJECT_ID" \
+        -var "region=$_REGION" \
+        -var "frontend_image=${FRONT_IMAGE}" \
+        -var "backend_image=${BACK_IMAGE}" \
+        -var "env_name=$_ENV"
+
+# ---------------------------------------------------------------------
+# STEP 6: Ephemeral environment cleanup (feature branches)
+# ---------------------------------------------------------------------
+- id: "destroy-ephemeral"
+  name: "hashicorp/terraform:light"
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      if [[ "$_BRANCH_NAME" == feature/* ]]; then
+        echo "Destroying ephemeral environment for $_BRANCH_NAME"
+        cd terraform/envs/ephemeral
+        terraform init -input=false
+        terraform destroy -auto-approve -var "project_id=$_PROJECT_ID" -var "region=$_REGION" -var "env_name=$_BRANCH_NAME" || true
+      fi
+  waitFor: ["terraform-apply"]
+
+# ---------------------------------------------------------------------
+# STEP 7: Outputs
+# ---------------------------------------------------------------------
+- id: "outputs"
+  name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+  entrypoint: "bash"
+  args:
+    - "-c"
+    - |
+      FRONT_URL=$(gcloud run services describe frontend-${_ENV} --region=$_REGION --format='value(status.url)' || true)
+      echo "✅ FRONTEND URL: $FRONT_URL"
+      echo "✅ DEPLOYED ENV: $_ENV"
+
+images:
+  - "us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/frontend:${_SHORT_SHA}"
+  - "us-central1-docker.pkg.dev/$_PROJECT_ID/docker-repo/backend:${_SHORT_SHA}"
+
+timeout: "1800s"
+
