@@ -19,6 +19,7 @@ steps:
   # 📦 Push Images to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:${SHORT_SHA}']
+
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:${SHORT_SHA}']
 
@@ -40,10 +41,13 @@ steps:
       - |
         gcloud run deploy frontend-${_ENV} \
           --image us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:${SHORT_SHA} \
-          --region us-central1 --allow-unauthenticated
+          --region us-central1 \
+          --allow-unauthenticated
+
         gcloud run deploy backend-${_ENV} \
           --image us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:${SHORT_SHA} \
-          --region us-central1 --no-allow-unauthenticated
+          --region us-central1 \
+          --no-allow-unauthenticated
 
 substitutions:
   _ENV: dev
@@ -51,4 +55,8 @@ substitutions:
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:${SHORT_SHA}'
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:${SHORT_SHA}'
+
+# 🧾 Options Section — Fixes the “must specify logs bucket” error
+options:
+  logging: CLOUD_LOGGING_ONLY
 
