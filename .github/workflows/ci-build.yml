@@ -32,13 +32,16 @@ jobs:
 
       - name: Build Docker image
         run: |
-          SHA="${GITHUB_SHA::7}"
-          IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE_NAME:$SHA"
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE_NAME:$SHORT_SHA"
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          echo "Building image: $IMAGE_URI"
           docker build -t "$IMAGE_URI" .
 
       - name: Push Docker image
-        run: docker push "$IMAGE_URI"
+        run: |
+          echo "Pushing $IMAGE_URI"
+          docker push "$IMAGE_URI"
 
       - name: Print image
         run: echo "Image pushed: $IMAGE_URI"
