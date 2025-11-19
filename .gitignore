@@ -1,0 +1,23 @@
+# Terraform local state
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+crash.log
+*.tfvars
+*.auto.tfvars
+
+# Python
+__pycache__/
+*.pyc
+
+# Docker
+*.log
+
+# VSCode or other editor config
+.vscode/
+.idea/
+
+# Env files
+.env
+
