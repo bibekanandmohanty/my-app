@@ -3,7 +3,7 @@ name: CI - Build and Push Docker Image
 on:
   push:
     branches:
-      - '**'   # triggers for all branches
+      - '**'
 
 jobs:
   build:
@@ -32,7 +32,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
           IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE_NAME:$SHORT_SHA"
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
           echo "Building image: $IMAGE_URI"
@@ -40,9 +40,9 @@ jobs:
 
       - name: Push Docker image
         run: |
-          echo "Pushing $IMAGE_URI"
+          echo "Pushing image: $IMAGE_URI"
           docker push "$IMAGE_URI"
 
-      - name: Print image
+      - name: Print image URI
         run: echo "Image pushed: $IMAGE_URI"
 
