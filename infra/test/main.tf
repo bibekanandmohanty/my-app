@@ -1,5 +1,9 @@
 terraform {
   required_version = ">= 1.6.0"
+  backend "gcs" {
+    bucket = "cloudbuild-478701-tf-state"
+    prefix = "envs/test"
+  }
 
   required_providers {
     google = {
@@ -17,7 +21,7 @@ provider "google" {
 
 # 1) Cloud Run service running a simple public Python-like sample container
 resource "google_cloud_run_v2_service" "python_app" {
-  name     = "python-app-dev"
+  name     = "python-app-test"
   location = "us-central1"
 
   template {
